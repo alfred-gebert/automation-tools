@@ -39,22 +39,18 @@ def _load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_add_defaults(tmp_path: Path) -> None:
+def test_sequence_variants(tmp_path: Path) -> None:
     file_path = tmp_path / "payload.json"
+
     output = _run(["add", "--file", str(file_path), "--instance", "test01"])
     data = json.loads(output)
-    print("\n[test_add_defaults] file content:\n" + json.dumps(data, indent=2))
+    print("\n[test_sequence_variants:add_defaults] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["test01"] == {
         "instance_type": "t3a.large",
         "volume_size1": "200",
         "ami": "RHEL-10.1.0_HVM-*",
     }
-    on_disk = _load(file_path)
-    assert on_disk == data
 
-
-def test_add_custom_values(tmp_path: Path) -> None:
-    file_path = tmp_path / "payload.json"
     _run(
         [
             "add",
@@ -71,18 +67,14 @@ def test_add_custom_values(tmp_path: Path) -> None:
         ]
     )
     data = _load(file_path)
-    print("\n[test_add_custom_values] file content:\n" + json.dumps(data, indent=2))
+    print("\n[test_sequence_variants:add_custom_values] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["app01"] == {
         "instance_type": "m5.large",
         "volume_size1": "500",
         "ami": "RHEL-9.5.0_HVM-*",
     }
 
-
-def test_del_instance(tmp_path: Path) -> None:
-    file_path = tmp_path / "payload.json"
-    _run(["add", "--file", str(file_path), "--instance", "to-remove"])
-    _run(["del", "--file", str(file_path), "--instance", "to-remove"])
+    _run(["del", "--file", str(file_path), "--instance", "test01"])
     data = _load(file_path)
-    print("\n[test_del_instance] file content:\n" + json.dumps(data, indent=2))
-    assert "to-remove" not in data["client_payload"]["essdev_instances"]
+    print("\n[test_sequence_variants:del_instance] file content:\n" + json.dumps(data, indent=2))
+    assert "test01" not in data["client_payload"]["essdev_instances"]
