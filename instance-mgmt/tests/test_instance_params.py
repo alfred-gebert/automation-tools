@@ -1,0 +1,80 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from instance_params import main
+
+
+def _run(argv: list[str]) -> str:
+    # Capture stdout from main by running through a subprocess-like pattern
+    # but without spawning a new process.
+    import io
+    import sys
+
+    stdout = io.StringIO()
+    old_stdout = sys.stdout
+    try:
+        sys.stdout = stdout
+        # Monkeypatch argv for argparse
+        import instance_params
+
+        old_argv = sys.argv
+        sys.argv = ["instance_params.py", *argv]
+        try:
+            main()
+        finally:
+            sys.argv = old_argv
+    finally:
+        sys.stdout = old_stdout
+    return stdout.getvalue().strip()
+
+
+def _load(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_add_defaults(tmp_path: Path) -> None:
+    file_path = tmp_path / "payload.json"
+    output = _run(["add", "--file", str(file_path), "--instance", "test01"])
+    data = json.loads(output)
+    assert data["client_payload"]["essdev_instances"]["test01"] == {
+        "instance_type": "t3a.large",
+        "volume_size1": "200",
+        "ami": "RHEL-10.1.0_HVM-*",
+    }
+    on_disk = _load(file_path)
+    assert on_disk == data
+
+
+def test_add_custom_values(tmp_path: Path) -> None:
+    file_path = tmp_path / "payload.json"
+    _run(
+        [
+            "add",
+            "--file",
+            str(file_path),
+            "--instance",
+            "app01",
+            "--type",
+            "m5.large",
+            "--os",
+            "rhel9",
+            "--volume-size",
+            "500",
+        ]
+    )
+    data = _load(file_path)
+    assert data["client_payload"]["essdev_instances"]["app01"] == {
+        "instance_type": "m5.large",
+        "volume_size1": "500",
+        "ami": "RHEL-9.5.0_HVM-*",
+    }
+
+
+def test_del_instance(tmp_path: Path) -> None:
+    file_path = tmp_path / "payload.json"
+    _run(["add", "--file", str(file_path), "--instance", "to-remove"])
+    _run(["del", "--file", str(file_path), "--instance", "to-remove"])
+    data = _load(file_path)
+    assert "to-remove" not in data["client_payload"]["essdev_instances"]
