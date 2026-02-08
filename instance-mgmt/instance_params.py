@@ -20,6 +20,7 @@ class Args:
     command: str
     file: str
     dry_run: bool
+    keep_temp: bool
     instance: Optional[str]
     type: Optional[str]
     os: Optional[str]
@@ -42,6 +43,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write changes to a temporary copy and print the curl command",
     )
+    add_parser.add_argument(
+        "--keep-temp",
+        action="store_true",
+        help="Keep temporary dry-run file (useful for tests)",
+    )
     add_parser.add_argument("--instance", required=True, help="Instance name")
     add_parser.add_argument("--type", default="t3a.large", help="Instance type")
     add_parser.add_argument("--os", default="rhel10", help="Operating system")
@@ -59,6 +65,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write changes to a temporary copy and print the curl command",
     )
+    del_parser.add_argument(
+        "--keep-temp",
+        action="store_true",
+        help="Keep temporary dry-run file (useful for tests)",
+    )
     del_parser.add_argument("--instance", required=True, help="Instance name")
 
     list_parser = subparsers.add_parser(
@@ -75,6 +86,7 @@ def parse_args(argv: Optional[List[str]] = None) -> Args:
         command=ns.command,
         file=ns.file,
         dry_run=getattr(ns, "dry_run", False),
+        keep_temp=getattr(ns, "keep_temp", False),
         instance=getattr(ns, "instance", None),
         type=getattr(ns, "type", None),
         os=getattr(ns, "os", None),
@@ -236,6 +248,8 @@ def main() -> int:
                 _write_json(output_path, data)
                 print(json.dumps(data, indent=2))
                 print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
+                if not args.keep_temp:
+                    output_path.unlink(missing_ok=True)
             else:
                 _write_json(file_path, data)
                 _dispatch_payload(file_path)
@@ -253,6 +267,8 @@ def main() -> int:
                 _write_json(output_path, data)
                 print(json.dumps(data, indent=2))
                 print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
+                if not args.keep_temp:
+                    output_path.unlink(missing_ok=True)
             else:
                 _write_json(file_path, data)
                 _dispatch_payload(file_path)

@@ -78,6 +78,7 @@ def test_sequence_variants(tmp_path: Path) -> None:
         "--instance",
         "test01",
         "--dry-run",
+        "--keep-temp",
         "--file",
         str(file_path),
     ]
@@ -105,6 +106,7 @@ def test_sequence_variants(tmp_path: Path) -> None:
         "--volume-size",
         "500",
         "--dry-run",
+        "--keep-temp",
         "--file",
         str(file_path),
     ]
@@ -121,7 +123,15 @@ def test_sequence_variants(tmp_path: Path) -> None:
         "ami": "RHEL-9.5.0_HVM-*",
     }
 
-    params_del = ["del", "--instance", "test01", "--dry-run", "--file", str(file_path)]
+    params_del = [
+        "del",
+        "--instance",
+        "test01",
+        "--dry-run",
+        "--keep-temp",
+        "--file",
+        str(file_path),
+    ]
     print("\n[test_sequence_variants:del_instance] params:\n" + " ".join(params_del))
     output = _run(params_del)
     data = _parse_first_json(output)
