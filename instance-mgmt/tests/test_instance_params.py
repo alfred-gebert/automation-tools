@@ -63,6 +63,13 @@ def _extract_curl_path(output: str) -> Path:
     raise AssertionError("No curl @path found in output")
 
 
+def _extract_curl_command(output: str) -> str:
+    for line in output.splitlines()[::-1]:
+        if line.strip().startswith("curl "):
+            return line.strip()
+    raise AssertionError("No curl command found in output")
+
+
 def test_sequence_variants(tmp_path: Path) -> None:
     file_path = tmp_path / "payload.json"
 
@@ -77,7 +84,9 @@ def test_sequence_variants(tmp_path: Path) -> None:
     print("\n[test_sequence_variants:add_defaults] params:\n" + " ".join(params_add_defaults))
     output = _run(params_add_defaults)
     data = _parse_first_json(output)
+    curl_cmd = _extract_curl_command(output)
     file_path = _extract_curl_path(output)
+    print("\n[test_sequence_variants:add_defaults] curl command:\n" + curl_cmd)
     print("\n[test_sequence_variants:add_defaults] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["test01"] == {
         "instance_type": "t3a.large",
@@ -102,7 +111,9 @@ def test_sequence_variants(tmp_path: Path) -> None:
     print("\n[test_sequence_variants:add_custom_values] params:\n" + " ".join(params_add_custom))
     output = _run(params_add_custom)
     data = _parse_first_json(output)
+    curl_cmd = _extract_curl_command(output)
     file_path = _extract_curl_path(output)
+    print("\n[test_sequence_variants:add_custom_values] curl command:\n" + curl_cmd)
     print("\n[test_sequence_variants:add_custom_values] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["app01"] == {
         "instance_type": "m5.large",
@@ -114,6 +125,8 @@ def test_sequence_variants(tmp_path: Path) -> None:
     print("\n[test_sequence_variants:del_instance] params:\n" + " ".join(params_del))
     output = _run(params_del)
     data = _parse_first_json(output)
+    curl_cmd = _extract_curl_command(output)
     file_path = _extract_curl_path(output)
+    print("\n[test_sequence_variants:del_instance] curl command:\n" + curl_cmd)
     print("\n[test_sequence_variants:del_instance] file content:\n" + json.dumps(data, indent=2))
     assert "test01" not in data["client_payload"]["essdev_instances"]
