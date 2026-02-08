@@ -186,13 +186,17 @@ def _dispatch_payload(path: Path) -> None:
     subprocess.run(cmd, check=True)
 
 
-def _build_curl_cmd(path: Path) -> list[str]:
+def _build_curl_cmd(path: Path, *, dry_run: bool = False) -> list[str]:
     token = os.getenv("GITHUB_WORKFLOW_TOKEN")
     url = os.getenv("GITHUB_WORKFLOW_URL")
     if not token or not url:
-        raise SystemExit(
-            "Missing GITHUB_WORKFLOW_TOKEN or GITHUB_WORKFLOW_URL environment variable."
-        )
+        if dry_run:
+            token = token or "DRY_RUN_TOKEN"
+            url = url or "https://api.github.com/repos/ORG/repo-name/dispatches"
+        else:
+            raise SystemExit(
+                "Missing GITHUB_WORKFLOW_TOKEN or GITHUB_WORKFLOW_URL environment variable."
+            )
     return [
         "curl",
         "-isL",
@@ -231,7 +235,7 @@ def main() -> int:
                     output_path = Path(handle.name)
                 _write_json(output_path, data)
                 print(json.dumps(data, indent=2))
-                print(" ".join(_build_curl_cmd(output_path)))
+                print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
             else:
                 _write_json(file_path, data)
                 _dispatch_payload(file_path)
@@ -248,7 +252,7 @@ def main() -> int:
                     output_path = Path(handle.name)
                 _write_json(output_path, data)
                 print(json.dumps(data, indent=2))
-                print(" ".join(_build_curl_cmd(output_path)))
+                print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
             else:
                 _write_json(file_path, data)
                 _dispatch_payload(file_path)
