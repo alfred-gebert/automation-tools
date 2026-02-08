@@ -94,8 +94,16 @@ def _ensure_structure(data: dict) -> dict:
 
 def _load_or_init(path: Path) -> dict:
     if path.exists():
-        with path.open("r", encoding="utf-8") as handle:
-            return _ensure_structure(json.load(handle))
+        with path.open("r", encoding="utf-8-sig") as handle:
+            raw = handle.read()
+        if not raw.strip():
+            return _default_struct()
+        try:
+            return _ensure_structure(json.loads(raw))
+        except json.JSONDecodeError as exc:
+            raise SystemExit(
+                f"Invalid JSON in {path}. Fix the file or delete it to reinitialize."
+            ) from exc
     return _default_struct()
 
 
