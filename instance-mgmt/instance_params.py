@@ -46,7 +46,6 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     add_parser = subparsers.add_parser("add", help="Add instance payload")
-    add_parser.add_argument("--file", required=True, help="JSON file path")
     add_parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -66,9 +65,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=200,
         help="Volume size in GB",
     )
+    add_parser.add_argument("--file", required=True, help="JSON file path")
 
     del_parser = subparsers.add_parser("del", help="Delete instance payload")
-    del_parser.add_argument("--file", required=True, help="JSON file path")
     del_parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -80,6 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Keep temporary dry-run file (useful for tests)",
     )
     del_parser.add_argument("--instance", required=True, help="Instance name")
+    del_parser.add_argument("--file", required=True, help="JSON file path")
 
     list_parser = subparsers.add_parser(
         "list", help="List instance names from essdev_instances"
