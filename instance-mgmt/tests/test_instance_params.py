@@ -44,10 +44,10 @@ def test_sequence_variants(tmp_path: Path) -> None:
 
     params_add_defaults = [
         "add",
-        "--file",
-        str(file_path),
         "--instance",
         "test01",
+        "--file",
+        str(file_path),
     ]
     print("\n[test_sequence_variants:add_defaults] params:\n" + " ".join(params_add_defaults))
     output = _run(params_add_defaults)
@@ -61,8 +61,6 @@ def test_sequence_variants(tmp_path: Path) -> None:
 
     params_add_custom = [
         "add",
-        "--file",
-        str(file_path),
         "--instance",
         "app01",
         "--type",
@@ -71,6 +69,8 @@ def test_sequence_variants(tmp_path: Path) -> None:
         "rhel9",
         "--volume-size",
         "500",
+        "--file",
+        str(file_path),
     ]
     print("\n[test_sequence_variants:add_custom_values] params:\n" + " ".join(params_add_custom))
     _run(params_add_custom)
@@ -82,7 +82,7 @@ def test_sequence_variants(tmp_path: Path) -> None:
         "ami": "RHEL-9.5.0_HVM-*",
     }
 
-    params_del = ["del", "--file", str(file_path), "--instance", "test01"]
+    params_del = ["del", "--instance", "test01", "--file", str(file_path)]
     print("\n[test_sequence_variants:del_instance] params:\n" + " ".join(params_del))
     _run(params_del)
     data = _load(file_path)
