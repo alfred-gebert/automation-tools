@@ -54,6 +54,15 @@ def _parse_first_json(output: str) -> dict:
     raise AssertionError("Unterminated JSON object in output")
 
 
+def _extract_curl_path(output: str) -> Path:
+    for line in output.splitlines()[::-1]:
+        parts = line.strip().split()
+        for part in parts:
+            if part.startswith("@"):  # curl -d @path
+                return Path(part[1:])
+    raise AssertionError("No curl @path found in output")
+
+
 def test_sequence_variants(tmp_path: Path) -> None:
     file_path = tmp_path / "payload.json"
 
@@ -68,6 +77,7 @@ def test_sequence_variants(tmp_path: Path) -> None:
     print("\n[test_sequence_variants:add_defaults] params:\n" + " ".join(params_add_defaults))
     output = _run(params_add_defaults)
     data = _parse_first_json(output)
+    file_path = _extract_curl_path(output)
     print("\n[test_sequence_variants:add_defaults] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["test01"] == {
         "instance_type": "t3a.large",
@@ -90,8 +100,9 @@ def test_sequence_variants(tmp_path: Path) -> None:
         str(file_path),
     ]
     print("\n[test_sequence_variants:add_custom_values] params:\n" + " ".join(params_add_custom))
-    _run(params_add_custom)
-    data = _load(file_path)
+    output = _run(params_add_custom)
+    data = _parse_first_json(output)
+    file_path = _extract_curl_path(output)
     print("\n[test_sequence_variants:add_custom_values] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["app01"] == {
         "instance_type": "m5.large",
@@ -101,7 +112,8 @@ def test_sequence_variants(tmp_path: Path) -> None:
 
     params_del = ["del", "--instance", "test01", "--dry-run", "--file", str(file_path)]
     print("\n[test_sequence_variants:del_instance] params:\n" + " ".join(params_del))
-    _run(params_del)
-    data = _load(file_path)
+    output = _run(params_del)
+    data = _parse_first_json(output)
+    file_path = _extract_curl_path(output)
     print("\n[test_sequence_variants:del_instance] file content:\n" + json.dumps(data, indent=2))
     assert "test01" not in data["client_payload"]["essdev_instances"]
