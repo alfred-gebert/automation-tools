@@ -39,6 +39,21 @@ def _load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _parse_first_json(output: str) -> dict:
+    start = output.find("{")
+    if start == -1:
+        raise AssertionError("No JSON object found in output")
+    depth = 0
+    for idx, ch in enumerate(output[start:], start=start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return json.loads(output[start : idx + 1])
+    raise AssertionError("Unterminated JSON object in output")
+
+
 def test_sequence_variants(tmp_path: Path) -> None:
     file_path = tmp_path / "payload.json"
 
@@ -52,7 +67,7 @@ def test_sequence_variants(tmp_path: Path) -> None:
     ]
     print("\n[test_sequence_variants:add_defaults] params:\n" + " ".join(params_add_defaults))
     output = _run(params_add_defaults)
-    data = json.loads(output)
+    data = _parse_first_json(output)
     print("\n[test_sequence_variants:add_defaults] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["test01"] == {
         "instance_type": "t3a.large",
