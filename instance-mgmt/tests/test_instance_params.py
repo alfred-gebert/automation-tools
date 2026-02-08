@@ -111,10 +111,12 @@ def test_sequence_variants(tmp_path: Path) -> None:
         str(file_path),
     ]
     print("\n[test_sequence_variants:add_custom_values] params:\n" + " ".join(params_add_custom))
+    previous_path = file_path
     output = _run(params_add_custom)
     data = _parse_first_json(output)
     curl_cmd = _extract_curl_command(output)
     file_path = _extract_curl_path(output)
+    previous_path.unlink(missing_ok=True)
     print("\n[test_sequence_variants:add_custom_values] curl command:\n" + curl_cmd)
     print("\n[test_sequence_variants:add_custom_values] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["app01"] == {
@@ -133,10 +135,13 @@ def test_sequence_variants(tmp_path: Path) -> None:
         str(file_path),
     ]
     print("\n[test_sequence_variants:del_instance] params:\n" + " ".join(params_del))
+    previous_path = file_path
     output = _run(params_del)
     data = _parse_first_json(output)
     curl_cmd = _extract_curl_command(output)
     file_path = _extract_curl_path(output)
+    previous_path.unlink(missing_ok=True)
     print("\n[test_sequence_variants:del_instance] curl command:\n" + curl_cmd)
     print("\n[test_sequence_variants:del_instance] file content:\n" + json.dumps(data, indent=2))
+    file_path.unlink(missing_ok=True)
     assert "test01" not in data["client_payload"]["essdev_instances"]
