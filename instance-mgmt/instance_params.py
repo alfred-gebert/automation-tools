@@ -32,7 +32,16 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Manage ESS instance definitions in a JSON payload file "
             "(add, del, list)."
-        )
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  instance_params.py add --instance test01 --file data.json\n"
+            "  instance_params.py add --instance app01 --type m5.large --os rhel9 --volume-size 500 --file data.json\n"
+            "  instance_params.py del --instance test01 --file data.json\n"
+            "  instance_params.py list --file data.json\n"
+            "  instance_params.py add --dry-run --keep-temp --instance test01 --file data.json\n"
+        ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
