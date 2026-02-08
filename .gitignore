@@ -5,3 +5,16 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.pyd
+
+# Test artifacts
+.pytest_cache/
+
+# Local payloads / temp outputs
+*.json.lock
