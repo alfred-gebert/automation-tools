@@ -42,7 +42,15 @@ def _load(path: Path) -> dict:
 def test_sequence_variants(tmp_path: Path) -> None:
     file_path = tmp_path / "payload.json"
 
-    output = _run(["add", "--file", str(file_path), "--instance", "test01"])
+    params_add_defaults = [
+        "add",
+        "--file",
+        str(file_path),
+        "--instance",
+        "test01",
+    ]
+    print("\n[test_sequence_variants:add_defaults] params:\n" + " ".join(params_add_defaults))
+    output = _run(params_add_defaults)
     data = json.loads(output)
     print("\n[test_sequence_variants:add_defaults] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["test01"] == {
@@ -51,21 +59,21 @@ def test_sequence_variants(tmp_path: Path) -> None:
         "ami": "RHEL-10.1.0_HVM-*",
     }
 
-    _run(
-        [
-            "add",
-            "--file",
-            str(file_path),
-            "--instance",
-            "app01",
-            "--type",
-            "m5.large",
-            "--os",
-            "rhel9",
-            "--volume-size",
-            "500",
-        ]
-    )
+    params_add_custom = [
+        "add",
+        "--file",
+        str(file_path),
+        "--instance",
+        "app01",
+        "--type",
+        "m5.large",
+        "--os",
+        "rhel9",
+        "--volume-size",
+        "500",
+    ]
+    print("\n[test_sequence_variants:add_custom_values] params:\n" + " ".join(params_add_custom))
+    _run(params_add_custom)
     data = _load(file_path)
     print("\n[test_sequence_variants:add_custom_values] file content:\n" + json.dumps(data, indent=2))
     assert data["client_payload"]["essdev_instances"]["app01"] == {
@@ -74,7 +82,9 @@ def test_sequence_variants(tmp_path: Path) -> None:
         "ami": "RHEL-9.5.0_HVM-*",
     }
 
-    _run(["del", "--file", str(file_path), "--instance", "test01"])
+    params_del = ["del", "--file", str(file_path), "--instance", "test01"]
+    print("\n[test_sequence_variants:del_instance] params:\n" + " ".join(params_del))
+    _run(params_del)
     data = _load(file_path)
     print("\n[test_sequence_variants:del_instance] file content:\n" + json.dumps(data, indent=2))
     assert "test01" not in data["client_payload"]["essdev_instances"]
