@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 import time
 from contextlib import contextmanager
+import socket
 
 
 @dataclass
@@ -207,16 +208,54 @@ def _dispatch_payload(path: Path) -> None:
     subprocess.run(cmd, check=True)
 
 
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise SystemExit(f"{name} must be an integer, got: {raw}") from exc
+    if value <= 0:
+        raise SystemExit(f"{name} must be a positive integer, got: {raw}")
+    return value
+
+
+def _wait_for_instance_ready(
+    host: str,
+    *,
+    port: int = 22,
+    interval_seconds: int = 5,
+    timeout_seconds: int = 900,
+) -> None:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return
+    deadline = time.monotonic() + timeout_seconds
+    last_error: Optional[Exception] = None
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=interval_seconds):
+                print(f"Instance is ready on {host}:{port}")
+                return
+        except OSError as exc:
+            last_error = exc
+        time.sleep(interval_seconds)
+    raise SystemExit(
+        f"Timeout waiting for instance on {host}:{port} after {timeout_seconds}s. "
+        f"Last error: {last_error}"
+    )
+
+
 def _build_curl_cmd(path: Path, *, dry_run: bool = False) -> list[str]:
-    token = os.getenv("GITHUB_WORKFLOW_TOKEN")
-    url = os.getenv("GITHUB_WORKFLOW_URL")
+    token = os.getenv("GH_WF_TOKEN")
+    url = os.getenv("GH_WF_URL")
     if not token or not url:
         if dry_run:
             token = token or "DRY_RUN_TOKEN"
             url = url or "https://api.github.com/repos/ORG/repo-name/dispatches"
         else:
             raise SystemExit(
-                "Missing GITHUB_WORKFLOW_TOKEN or GITHUB_WORKFLOW_URL environment variable."
+                "Missing GH_WF_TOKEN or GH_WF_URL environment variable."
             )
     return [
         "curl",
@@ -262,6 +301,17 @@ def main() -> int:
             else:
                 _write_json(file_path, data)
                 _dispatch_payload(file_path)
+                interval_seconds = _env_int("GH_WF_PROBE_INTERVAL", 5)
+                timeout_seconds = _env_int("GH_WF_PROBE_TIMEOUT", 900)
+                host = args.instance
+                if host:
+                    port = _env_int("GH_WF_PROBE_PORT", 22)
+                    _wait_for_instance_ready(
+                        host,
+                        port=port,
+                        interval_seconds=interval_seconds,
+                        timeout_seconds=timeout_seconds,
+                    )
                 print(json.dumps(data, indent=2))
             return 0
         if args.command == "del":
