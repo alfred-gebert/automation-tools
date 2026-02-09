@@ -11,6 +11,7 @@ spec = importlib.util.spec_from_file_location("instance_mgmt", MODULE_PATH)
 if spec is None or spec.loader is None:
     raise ImportError(f"Cannot load module from {MODULE_PATH}")
 instance_mgmt = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = instance_mgmt
 spec.loader.exec_module(instance_mgmt)
 main = instance_mgmt.main
 
