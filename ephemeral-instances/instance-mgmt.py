@@ -274,69 +274,85 @@ def _build_curl_cmd(path: Path, *, dry_run: bool = False) -> list[str]:
     ]
 
 
+def _handle_add(args: Args, data: dict, file_path: Path) -> int:
+    client_payload = data["client_payload"]
+    was_present = args.instance in client_payload["essdev_instances"]
+    ami = _resolve_ami(args.os)
+    client_payload["essdev_instances"][args.instance] = {
+        "instance_type": args.type,
+        "volume_size1": str(args.volume_size),
+        "ami": ami,
+    }
+    if args.dry_run:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=file_path.suffix or ".json", delete=False
+        ) as handle:
+            output_path = Path(handle.name)
+        _write_json(output_path, data)
+        print(json.dumps(data, indent=2))
+        print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
+        if not args.keep_temp:
+            output_path.unlink(missing_ok=True)
+        return 0
+
+    _write_json(file_path, data)
+    _dispatch_payload(file_path)
+    if not was_present:
+        interval_seconds = _env_int("GH_WF_PROBE_INTERVAL", 5)
+        timeout_seconds = _env_int("GH_WF_PROBE_TIMEOUT", 900)
+        host = args.instance
+        if host:
+            port = _env_int("GH_WF_PROBE_PORT", 22)
+            _wait_for_instance_ready(
+                host,
+                port=port,
+                interval_seconds=interval_seconds,
+                timeout_seconds=timeout_seconds,
+            )
+    print(json.dumps(data, indent=2))
+    return 0
+
+
+def _handle_del(args: Args, data: dict, file_path: Path) -> int:
+    client_payload = data["client_payload"]
+    client_payload["essdev_instances"].pop(args.instance, None)
+    client_payload["ess_custom_ports_egress"].pop(args.instance, None)
+    client_payload["ess_custom_ports_ingress"].pop(args.instance, None)
+    if args.dry_run:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=file_path.suffix or ".json", delete=False
+        ) as handle:
+            output_path = Path(handle.name)
+        _write_json(output_path, data)
+        print(json.dumps(data, indent=2))
+        print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
+        if not args.keep_temp:
+            output_path.unlink(missing_ok=True)
+        return 0
+
+    _write_json(file_path, data)
+    _dispatch_payload(file_path)
+    print(json.dumps(data, indent=2))
+    return 0
+
+
+def _handle_list(data: dict) -> int:
+    instances = sorted(data["client_payload"]["essdev_instances"].keys())
+    print(json.dumps(instances, indent=2))
+    return 0
+
+
 def main() -> int:
     args = parse_args()
     file_path = Path(args.file)
     with _file_lock(file_path):
         data = _load_or_init(file_path)
-        client_payload = data["client_payload"]
-        output_path = file_path
         if args.command == "add":
-            ami = _resolve_ami(args.os)
-            client_payload["essdev_instances"][args.instance] = {
-                "instance_type": args.type,
-                "volume_size1": str(args.volume_size),
-                "ami": ami,
-            }
-            if args.dry_run:
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=file_path.suffix or ".json", delete=False
-                ) as handle:
-                    output_path = Path(handle.name)
-                _write_json(output_path, data)
-                print(json.dumps(data, indent=2))
-                print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
-                if not args.keep_temp:
-                    output_path.unlink(missing_ok=True)
-            else:
-                _write_json(file_path, data)
-                _dispatch_payload(file_path)
-                interval_seconds = _env_int("GH_WF_PROBE_INTERVAL", 5)
-                timeout_seconds = _env_int("GH_WF_PROBE_TIMEOUT", 900)
-                host = args.instance
-                if host:
-                    port = _env_int("GH_WF_PROBE_PORT", 22)
-                    _wait_for_instance_ready(
-                        host,
-                        port=port,
-                        interval_seconds=interval_seconds,
-                        timeout_seconds=timeout_seconds,
-                    )
-                print(json.dumps(data, indent=2))
-            return 0
+            return _handle_add(args, data, file_path)
         if args.command == "del":
-            client_payload["essdev_instances"].pop(args.instance, None)
-            client_payload["ess_custom_ports_egress"].pop(args.instance, None)
-            client_payload["ess_custom_ports_ingress"].pop(args.instance, None)
-            if args.dry_run:
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=file_path.suffix or ".json", delete=False
-                ) as handle:
-                    output_path = Path(handle.name)
-                _write_json(output_path, data)
-                print(json.dumps(data, indent=2))
-                print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
-                if not args.keep_temp:
-                    output_path.unlink(missing_ok=True)
-            else:
-                _write_json(file_path, data)
-                _dispatch_payload(file_path)
-                print(json.dumps(data, indent=2))
-            return 0
+            return _handle_del(args, data, file_path)
         if args.command == "list":
-            instances = sorted(client_payload["essdev_instances"].keys())
-            print(json.dumps(instances, indent=2))
-            return 0
+            return _handle_list(data)
     return 0
 
 
