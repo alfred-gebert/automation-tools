@@ -26,6 +26,7 @@ class Args:
     type: Optional[str]
     os: Optional[str]
     volume_size: Optional[int]
+    domain: Optional[str]
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -66,6 +67,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=200,
         help="Volume size in GB",
     )
+    add_parser.add_argument(
+        "--domain",
+        required=True,
+        help="Domain name to append to the instance host",
+    )
     add_parser.add_argument("--file", required=True, help="JSON file path")
 
     del_parser = subparsers.add_parser("del", help="Delete instance")
@@ -101,6 +107,7 @@ def parse_args(argv: Optional[List[str]] = None) -> Args:
         type=getattr(ns, "type", None),
         os=getattr(ns, "os", None),
         volume_size=getattr(ns, "volume_size", None),
+        domain=getattr(ns, "domain", None),
     )
 
 
@@ -205,7 +212,23 @@ def _resolve_ami(os_name: Optional[str]) -> Optional[str]:
 
 def _dispatch_payload(path: Path) -> None:
     cmd = _build_curl_cmd(path)
-    subprocess.run(cmd, check=True)
+    result = subprocess.run(cmd, check=False, text=True, capture_output=True)
+    output = result.stdout or ""
+    stderr = result.stderr or ""
+    status = None
+    marker = "__HTTP_STATUS__:"
+    if marker in output:
+        body, tail = output.rsplit(marker, 1)
+        output = body.rstrip()
+        try:
+            status = int(tail.strip())
+        except ValueError:
+            status = None
+
+    if result.returncode != 0 or (status is not None and status >= 400):
+        status_text = f"HTTP {status}" if status is not None else "HTTP unknown"
+        details = output.strip() or stderr.strip() or "(no response body)"
+        raise SystemExit(f"GitHub API request failed: {status_text}\n{details}")
 
 
 def _env_int(name: str, default: int) -> int:
@@ -224,12 +247,15 @@ def _env_int(name: str, default: int) -> int:
 def _wait_for_instance_ready(
     host: str,
     *,
+    domain: Optional[str] = None,
     port: int = 22,
     interval_seconds: int = 5,
     timeout_seconds: int = 900,
 ) -> None:
     if os.getenv("PYTEST_CURRENT_TEST"):
         return
+    if domain:
+        host = f"{host}.{domain.lstrip('.')}"
     deadline = time.monotonic() + timeout_seconds
     last_error: Optional[Exception] = None
     while time.monotonic() < deadline:
@@ -259,7 +285,9 @@ def _build_curl_cmd(path: Path, *, dry_run: bool = False) -> list[str]:
             )
     return [
         "curl",
-        "-isL",
+        "-sS",
+        "-L",
+        "--fail-with-body",
         "-X",
         "POST",
         "-H",
@@ -268,6 +296,8 @@ def _build_curl_cmd(path: Path, *, dry_run: bool = False) -> list[str]:
         f"Authorization: Bearer {token}",
         "-H",
         "X-GitHub-Api-Version: 2022-11-28",
+        "-w",
+        "\n__HTTP_STATUS__:%{http_code}\n",
         url,
         "-d",
         f"@{path}",
@@ -305,6 +335,7 @@ def _handle_add(args: Args, data: dict, file_path: Path) -> int:
             port = _env_int("GH_WF_PROBE_PORT", 22)
             _wait_for_instance_ready(
                 host,
+                domain=args.domain,
                 port=port,
                 interval_seconds=interval_seconds,
                 timeout_seconds=timeout_seconds,
