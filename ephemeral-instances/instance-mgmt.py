@@ -225,10 +225,13 @@ def _dispatch_payload(path: Path) -> None:
         except ValueError:
             status = None
 
+    status_text = f"HTTP {status}" if status is not None else "HTTP unknown"
     if result.returncode != 0 or (status is not None and status >= 400):
-        status_text = f"HTTP {status}" if status is not None else "HTTP unknown"
         details = output.strip() or stderr.strip() or "(no response body)"
-        raise SystemExit(f"GitHub API request failed: {status_text}\n{details}")
+        print(f"GitHub API request failed: {status_text}")
+        raise SystemExit(details)
+
+    print(f"GitHub API request succeeded: {status_text}")
 
 
 def _env_int(name: str, default: int) -> int:
