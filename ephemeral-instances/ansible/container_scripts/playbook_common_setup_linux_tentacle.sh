@@ -22,7 +22,7 @@ cat > $host_vars_file <<EOF
 ---
 install_alloy_stage: "dev"
 sot_tentacle_instance: "ess-auto-qa"
-sot_environment_name: ""
+sot_environment_name: "sys-test-auto"
 
 ...
 # code: language=yaml
