@@ -4,6 +4,19 @@ playbook_script=$1
 [ -z "$playbook_script" ] && exit 1
 shift 1
 
+if [ -z "$VAULT_PASSWORD_B64" ]; then
+   cred_id=$1
+   shift 1
+
+   cred_file="$HOME/.ansible-playbook-cred-$cred_id"
+   if [ ! -e "$cred_file" ]; then
+       echo "VAULT_PASSWORD_B64 is not defined"
+       exit 1
+   else
+        source $cred_file
+   fi
+fi
+
 playbook_args="$@"
 
 if [ -z "$GIT_USER" ]; then
