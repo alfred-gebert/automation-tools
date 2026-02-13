@@ -252,20 +252,23 @@ def _wait_for_instance_ready(
     *,
     domain: Optional[str] = None,
     port: int = 22,
-    interval_seconds: int = 5,
+    first_interval_seconds: int = 90,
+    interval_seconds: int = 10,
     timeout_seconds: int = 900,
 ) -> None:
     if os.getenv("PYTEST_CURRENT_TEST"):
         return
     if domain:
         host = f"{host}.{domain.lstrip('.')}"
+
+    time.sleep(first_interval_seconds)  # Give DNS some time to propagate
     deadline = time.monotonic() + timeout_seconds
     last_error: Optional[Exception] = None
     attempts = 0
     type="DNS resolution"
     while time.monotonic() < deadline:
         attempts += 1
-        if attempts % 5 == 0:
+        if attempts % 3 == 0:
             print(f"Waiting for instance ( {type} ) on {host}:{port}...")
         try:
             socket.getaddrinfo(host, None)
