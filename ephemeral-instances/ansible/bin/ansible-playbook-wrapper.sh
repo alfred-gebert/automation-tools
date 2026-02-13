@@ -37,7 +37,7 @@ fi
 base_dir="/opt/automation"
 container_scripts_dir="$base_dir/container_scripts"
 container_image=repo.sup-logistik.de/docker-private-releases/supcis-ansible-container:202503-x86
-container_vol="-v $ansbile_container_scripts_dir:/scripts:z,ro"
+container_vol="-v $container_scripts_dir:/scripts:z,ro"
 container_env="--env GIT_USER --env GIT_TOKEN --env VAULT_PASSWORD_B64"
 
 podman run --rm --user ansible -t $container_vol $container_env $container_image bash /scripts/$playbook_script $playbook_args
