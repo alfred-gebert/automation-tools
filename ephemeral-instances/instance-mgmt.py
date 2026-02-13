@@ -359,7 +359,7 @@ def _handle_add(args: Args, data: dict, file_path: Path) -> int:
     if os.getenv("PYTEST_CURRENT_TEST"):
         print(json.dumps(data, indent=2))
     else:
-        print(f"{args.instance} has been added.")
+        print(f"Instance {args.instance} has been added.")
     return 0
 
 
@@ -386,7 +386,7 @@ def _handle_del(args: Args, data: dict, file_path: Path) -> int:
     if os.getenv("PYTEST_CURRENT_TEST"):
         print(json.dumps(data, indent=2))
     else:
-        print(f"{args.instance} has been deleted.")
+        print(f"Instance {args.instance} has been deleted.")
     return 0
 
 
