@@ -8,7 +8,7 @@ if [ -z "$VAULT_PASSWORD_B64" ]; then
    cred_id=$1
    shift 1
 
-   cred_file="$HOME/.ansible-playbook-cred-$cred_id"
+   cred_file="/tmp/automation/.ansible-cred-$cred_id"
    if [ ! -e "$cred_file" ]; then
        echo "VAULT_PASSWORD_B64 is not defined"
        exit 1
@@ -34,13 +34,12 @@ if [ -z "$VAULT_PASSWORD_B64" ]; then
    exit 1
 fi
 
-ansbile_base_dir="/opt/ansible"
-ansbile_bin_dir="$ansbile_base_dir/bin"
-ansbile_container_scripts_dir="$ansbile_base_dir/container_scripts"
-ansible_image=repo.sup-logistik.de/docker-private-releases/supcis-ansible-container:202503-x86
+base_dir="/opt/automation"
+container_scripts_dir="$base_dir/container_scripts"
+container_image=repo.sup-logistik.de/docker-private-releases/supcis-ansible-container:202503-x86
 container_vol="-v $ansbile_container_scripts_dir:/scripts:z,ro"
 container_env="--env GIT_USER --env GIT_TOKEN --env VAULT_PASSWORD_B64"
 
-podman run --rm --user ansible -t $container_vol $container_env $ansible_image bash /scripts/$playbook_script $playbook_args
+podman run --rm --user ansible -t $container_vol $container_env $container_image bash /scripts/$playbook_script $playbook_args
 
 exit 0
