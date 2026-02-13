@@ -35,11 +35,13 @@ if [ -z "$VAULT_PASSWORD_B64" ]; then
 fi
 
 base_dir="/opt/automation"
-container_scripts_dir="$base_dir/container_scripts"
-container_image=repo.sup-logistik.de/docker-private-releases/supcis-ansible-container:202503-x86
-container_vol="-v $container_scripts_dir:/scripts:z,ro"
-container_env="--env GIT_USER --env GIT_TOKEN --env VAULT_PASSWORD_B64"
+cntr_scripts_dir="$base_dir/container_scripts"
+cntr_image=repo.sup-logistik.de/docker-private-releases/supcis-ansible-container:202503-x86
+cntr_vol="-v $cntr_scripts_dir:/scripts:ro"
+cntr_env="--env GIT_USER --env GIT_TOKEN --env VAULT_PASSWORD_B64"
+cntr_opts="--rm -t --security-opt label=disable --user ansible"
+cntr_cmd="/scripts/$playbook_script"
 
-podman run --rm --user ansible -t $container_vol $container_env $container_image bash /scripts/$playbook_script $playbook_args
+podman run $cntr_opts $cntr_vol $cntr_env $cntr_image bash $cntr_cmd $playbook_args
 
 exit 0
