@@ -261,7 +261,11 @@ def _wait_for_instance_ready(
         host = f"{host}.{domain.lstrip('.')}"
     deadline = time.monotonic() + timeout_seconds
     last_error: Optional[Exception] = None
+    attempts = 0
     while time.monotonic() < deadline:
+        attempts += 1
+        if attempts % 5 == 0:
+            print(f"Waiting for instance on {host}:{port}...")
         try:
             with socket.create_connection((host, port), timeout=interval_seconds):
                 print(f"Instance is ready on {host}:{port}")
