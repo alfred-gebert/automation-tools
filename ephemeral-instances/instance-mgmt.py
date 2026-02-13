@@ -334,7 +334,8 @@ def _handle_add(args: Args, data: dict, file_path: Path) -> int:
         ) as handle:
             output_path = Path(handle.name)
         _write_json(output_path, data)
-        print(json.dumps(data, indent=2))
+        if os.getenv("PYTEST_CURRENT_TEST"):
+            print(json.dumps(data, indent=2))
         print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
         if not args.keep_temp:
             output_path.unlink(missing_ok=True)
@@ -355,7 +356,10 @@ def _handle_add(args: Args, data: dict, file_path: Path) -> int:
                 interval_seconds=interval_seconds,
                 timeout_seconds=timeout_seconds,
             )
-    print(json.dumps(data, indent=2))
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        print(json.dumps(data, indent=2))
+    else:
+        print("Add succeeded.")
     return 0
 
 
@@ -370,7 +374,8 @@ def _handle_del(args: Args, data: dict, file_path: Path) -> int:
         ) as handle:
             output_path = Path(handle.name)
         _write_json(output_path, data)
-        print(json.dumps(data, indent=2))
+        if os.getenv("PYTEST_CURRENT_TEST"):
+            print(json.dumps(data, indent=2))
         print(" ".join(_build_curl_cmd(output_path, dry_run=True)))
         if not args.keep_temp:
             output_path.unlink(missing_ok=True)
@@ -378,7 +383,10 @@ def _handle_del(args: Args, data: dict, file_path: Path) -> int:
 
     _write_json(file_path, data)
     _dispatch_payload(file_path)
-    print(json.dumps(data, indent=2))
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        print(json.dumps(data, indent=2))
+    else:
+        print("Delete succeeded.")
     return 0
 
 
