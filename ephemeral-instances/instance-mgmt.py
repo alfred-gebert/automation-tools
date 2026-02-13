@@ -262,10 +262,18 @@ def _wait_for_instance_ready(
     deadline = time.monotonic() + timeout_seconds
     last_error: Optional[Exception] = None
     attempts = 0
+    type="DNS resolution"
     while time.monotonic() < deadline:
         attempts += 1
         if attempts % 5 == 0:
-            print(f"Waiting for instance on {host}:{port}...")
+            print(f"Waiting for instance ( {type} ) on {host}:{port}...")
+        try:
+            socket.getaddrinfo(host, None)
+            type="SSH connection"
+        except OSError as exc:
+            last_error = exc
+            time.sleep(interval_seconds)
+            continue
         try:
             with socket.create_connection((host, port), timeout=interval_seconds):
                 print(f"Instance is ready on {host}:{port}")
