@@ -5,6 +5,7 @@ target_host_name=$1
 
 /scripts/update-git-repositories.sh || exit 1
 /scripts/update_ssh_config.sh || exit 1
+/scripts/update_loginmanagement_config.sh || exit 1
 
 short_hostname="${target_host_name%%.*}"
 echo "Hostname: $target_host_name"
@@ -13,7 +14,7 @@ echo "Short Hostname: $short_hostname"
 ansible_base_dir="/etc/ansible"
 playbooks_dir="$ansible_base_dir/playbooks"
 
-# Add Octopus Tentacle settings for "$short_hostname"
+# Add host-related environment settings for $short_hostname
 environment_intern="$ansible_base_dir/environments/intern/"
 host_vars_dir="$environment_intern/host_vars/$short_hostname"
 mkdir -p $host_vars_dir || exit 1
@@ -54,6 +55,7 @@ chown ansible:ansible $host_group_file
 # cat $host_group_file
 
 cd $playbooks_dir || exit 1
+ls -la internal/elws/
 
 export VAULT_PASSWORD="$(echo $VAULT_PASSWORD_B64 | /usr/bin/base64 -d)"
-ansible-playbook common/setup_linux_tentacle.yml -l $short_hostname -i $environment_intern || exit 1
+ansible-playbook internal/elws/01_os_configuration_elws_linux.yml -l $short_hostname -i $environment_intern || exit 1

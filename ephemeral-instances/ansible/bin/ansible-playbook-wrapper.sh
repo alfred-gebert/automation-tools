@@ -36,9 +36,10 @@ fi
 
 base_dir="/opt/automation"
 cntr_scripts_dir="$base_dir/container_scripts"
-cntr_image=repo.sup-logistik.de/docker-private-releases/supcis-ansible-container:202503-x86
+# cntr_image=repo.sup-logistik.de/docker-private-releases/supcis-ansible-container:202503-x86
+cntr_image=localhost/automation-ansible:latest
 cntr_vol="-v $cntr_scripts_dir:/scripts:ro"
-cntr_env="--env GIT_USER --env GIT_TOKEN --env VAULT_PASSWORD_B64"
+cntr_env="--env GIT_USER --env GIT_TOKEN --env GIT_BRANCH --env VAULT_PASSWORD_B64"
 cntr_opts="--rm -t --security-opt label=disable --user ansible"
 cntr_cmd="/scripts/$playbook_script"
 
