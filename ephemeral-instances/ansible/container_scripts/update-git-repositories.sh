@@ -41,6 +41,6 @@ for dir in environments playbooks roles; do
     fi
     
     echo "Pulling latest commits ..."
-    ( cd $git_dir && git pull --stat | grep -E 'files? changed' | head -n 1 ) || exit 1
+    ( cd $git_dir && git pull --stat 2>&1 | grep -E 'files? changed' | head -n 1 ) || exit 1
     ( cd $git_dir && git status )
 done
